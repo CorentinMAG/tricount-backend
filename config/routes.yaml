@@ -1,0 +1,13 @@
+controllers:
+    resource:
+        path: ../src/Controller/
+        namespace: App\Controller
+    type: attribute
+api_login_check:
+  path: /api/signin/password
+
+api_refresh_token:
+  path: /api/token/refresh
+
+api_token_invalidate:
+    path: /api/token/invalidate
