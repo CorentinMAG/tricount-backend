@@ -12,3 +12,24 @@ vich_uploader:
         inject_on_load: false
         delete_on_update: true
         delete_on_remove: true
+      tricounts:
+        uri_prefix: /uploads/tricounts
+        upload_destination: '%kernel.project_dir%/public/uploads/tricounts'
+        namer: 'Vich\UploaderBundle\Naming\SmartUniqueNamer'
+        inject_on_load: false
+        delete_on_update: true
+        delete_on_remove: true
+      currency:
+        uri_prefix: /uploads/currency
+        upload_destination: '%kernel.project_dir%/public/uploads/currency'
+        namer: 'Vich\UploaderBundle\Naming\SmartUniqueNamer'
+        inject_on_load: false
+        delete_on_update: true
+        delete_on_remove: true
+      labels_tricount:
+        uri_prefix: /uploads/labels/tricounts
+        upload_destination: '%kernel.project_dir%/public/uploads/labels/tricounts'
+        namer: 'Vich\UploaderBundle\Naming\SmartUniqueNamer'
+        inject_on_load: false
+        delete_on_update: true
+        delete_on_remove: true

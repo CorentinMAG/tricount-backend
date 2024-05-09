@@ -21,6 +21,17 @@ class TricountRepository extends ServiceEntityRepository
         parent::__construct($registry, Tricount::class);
     }
 
+    public function getByUser($user)
+    {
+        return $this->createQueryBuilder('t')
+        ->where('t.owner = :user')
+        ->orWhere(':user MEMBER of t.users')
+        ->setParameter('user', $user)
+        ->orderBy('t.createdAt', 'DESC')
+        ->getQuery()
+        ->getResult();
+    }
+
 //    /**
 //     * @return Tricount[] Returns an array of Tricount objects
 //     */

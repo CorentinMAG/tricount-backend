@@ -14,7 +14,7 @@ use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 
-class RegistrationController extends AbstractController
+class SignupController extends AbstractController
 {
     #[Route('/api/signup', name: 'signup', methods: ['POST'])]
     public function signup(

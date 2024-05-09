@@ -39,11 +39,17 @@ class JWTCreatedListener {
 
         if ($user instanceof User && $user->getLastLoginIp() != $request->getClientIp()) {
             $user->setLastLoginIp($request->getClientIp());
+            $user->setLastLoginAt(new \DateTime());
             $this->em->persist($user);
             $this->em->flush();
         }
 
         $payload['username'] = $user instanceof User ? $user->getUsername() : null;
+        $payload['updatedAt'] = $user instanceof User ? $user->getUpdatedAt() : null;
+        $payload['createdAt'] = $user instanceof User ? $user->getCreatedAt() : null;
+        $payload['country'] = $user instanceof User ? $user->getCountry() : null;
+        $payload['id'] = $user instanceof User ? $user->getId() : null;
+        $payload['gravatar'] = $user instanceof User ? $user->getGravatar() : null;
 
         $event->setData($payload);
 

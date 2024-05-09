@@ -38,11 +38,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private array $roles = ['ROLE_USER'];
 
-    #[Vich\UploadableField(mapping: 'avatars', fileNameProperty: 'avatarName')]
+    #[Vich\UploadableField(mapping: 'avatars', fileNameProperty: 'avatarName', size: 'avatarSize')]
     private ?File $avatarFile = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $avatarName = null;
+
+    #[ORM\Column(type: 'integer', nullable: true)]
+    private ?int $avatarSize = null;
 
     #[ORM\Column(type: 'datetime', nullable: true)]
     private ?\DateTimeInterface $updatedAt = null;
@@ -67,6 +70,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column(type: "string", nullable: true)]
     private ?string $googleId;
+
+    #[Assert\Url]
+    #[ORM\Column(type: 'string', nullable: false)]
+    private ?string $gravatar;
 
     /**
      * @var string The hashed password
@@ -94,6 +101,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setEmail(string $email): static
     {
         $this->email = $email;
+
+        $hash = hash('sha256', $email);
+
+        $this->gravatar = 'https://www.gravatar.com/avatar/'.$hash.'.jpg?s=200&d=identicon';
 
         return $this;
     }
@@ -221,7 +232,24 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function setAvatarFile(?File $avatarFile): static
     {
+
         $this->avatarFile = $avatarFile;
+
+        if (null != $avatarFile) {
+            $this->updatedAt = new \DateTime();
+        }
+
+        return $this;
+    }
+
+    public function getAvatarSize(): ?int
+    {
+        return $this->avatarSize;
+    }
+
+    public function setAvatarSize(?int $avatarSize): static
+    {
+        $this->avatarSize = $avatarSize;
 
         return $this;
     }
@@ -250,6 +278,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             $this->transactions->add($transaction);
         }
         return $this;
+    }
+
+    public function getGravatar(): ?string
+    {
+        return $this->gravatar;
     }
 
     public function getGoogleId(): ?string

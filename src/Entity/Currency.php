@@ -4,10 +4,12 @@ namespace App\Entity;
 
 use App\Repository\CurrencyRepository;
 use Doctrine\DBAL\Types\Types;
-use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\HttpFoundation\File\File;
+use Vich\UploaderBundle\Mapping\Annotation as Vich;
 
+#[Vich\Uploadable]
 #[ORM\Entity(repositoryClass: CurrencyRepository::class)]
 class Currency
 {
@@ -25,8 +27,20 @@ class Currency
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private \DateTimeInterface $createdAt;
 
-    #[ORM\OneToMany(mappedBy: 'currency', targetEntity: Tricount::class)]
-    private Collection $tricounts;
+    #[Vich\UploadableField(mapping: 'currency', fileNameProperty: 'imageName', size: 'imageSize')]
+    private ?File $imageFile = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?string $imageName = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?int $imageSize = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $updatedAt = null;
+
+    #[ORM\Column(length: 255)]
+    private ?string $uri = null;
 
     public function __construct()
     {
@@ -67,8 +81,62 @@ class Currency
         return $this->createdAt;
     }
 
-    public function getTricounts(): Collection
+    public function getImageFile(): ?File
     {
-        return $this->tricounts;
+        return $this->imageFile;
+    }
+
+    public function setImageFile(?File $imageFile): static
+    {
+        $this->imageFile = $imageFile;
+
+        if (null != $imageFile) {
+            $this->updatedAt = new \DateTimeImmutable();
+        }
+        return $this;
+    }
+
+    public function getImageName(): ?string
+    {
+        return $this->imageName;
+    }
+
+    public function setImageName(?string $imageName): static
+    {
+        $this->imageName = $imageName;
+        return $this;
+    }
+
+    public function getImageSize(): ?int
+    {
+        return $this->imageSize;
+    }
+
+    public function setImageSize(?int $imageSize): static
+    {
+        $this->imageSize = $imageSize;
+        return $this;
+    }
+
+    public function getUpdatedAt(): ?\DateTimeImmutable
+    {
+        return $this->updatedAt;
+    }
+
+    public function setUpdatedAt(?\DateTimeImmutable $updatedAt): static
+    {
+        $this->updatedAt = $updatedAt;
+        return $this;
+    }
+
+    public function getUri(): ?string
+    {
+        return $this->uri;
+    }
+
+    public function setUri(?string $uri): static 
+    {
+        $this->uri = $uri;
+        return $this;
     }
 }

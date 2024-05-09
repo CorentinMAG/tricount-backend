@@ -19,11 +19,17 @@ class Tricount
     #[ORM\Column]
     private ?int $id = null;
 
+    #[ORM\Column(length: 255)]
+    private ?string $title = null;
+
+    #[ORM\Column(nullable: true, type: 'text')]
+    private ?string $description = null;
+
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private \DateTimeInterface $createdAt;
 
-    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
-    private ?\DateTimeInterface $updatedAt = null;
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $updatedAt = null;
 
     #[ORM\ManyToOne(inversedBy: 'tricounts', targetEntity: TricountLabel::class)]
     private TricountLabel $label;
@@ -34,11 +40,14 @@ class Tricount
     #[ORM\Column(length: 255)]
     private ?string $uri = null;
 
-    #[Vich\UploadableField(mapping: 'tricounts', fileNameProperty: 'imageName')]
-    private ?File $image = null;
+    #[Vich\UploadableField(mapping: 'tricounts', fileNameProperty: 'imageName', size: 'imageSize')]
+    private ?File $imageFile = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $imageName = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?int $imageSize = null;
 
     #[ORM\ManyToMany(targetEntity: User::class)]
     private Collection $users;
@@ -61,6 +70,28 @@ class Tricount
         return $this->id;
     }
 
+    public function getTitle(): ?string
+    {
+        return $this->title;
+    }
+
+    public function setTitle(string $title): static
+    {
+        $this->title = $title;
+        return $this;
+    }
+
+    public function getDescription(): ?string
+    {
+        return $this->description;
+    }
+
+    public function setDescription(string $description): static
+    {
+        $this->description = $description;
+        return $this;
+    }
+
     public function getCreatedAt(): ?\DateTimeInterface
     {
         return $this->createdAt;
@@ -73,12 +104,12 @@ class Tricount
         return $this;
     }
 
-    public function getUpdatedAt(): ?\DateTimeInterface
+    public function getUpdatedAt(): ?\DateTimeImmutable
     {
         return $this->updatedAt;
     }
 
-    public function setUpdatedAt(?\DateTimeInterface $updatedAt): static
+    public function setUpdatedAt(?\DateTimeImmutable $updatedAt): static
     {
         $this->updatedAt = $updatedAt;
 
@@ -132,13 +163,28 @@ class Tricount
 
     public function getImageFile(): ?File
     {
-        return $this->image;
+        return $this->imageFile;
     }
 
-    public function setImageFile(?File $image): static
+    public function setImageFile(?File $imageFile): static
     {
-        $this->image = $image;
+        $this->imageFile = $imageFile;
 
+        if (null !== $imageFile) {
+            $this->updatedAt = new \DateTimeImmutable();
+        }
+
+        return $this;
+    }
+
+    public function getImageSize(): ?int
+    {
+        return $this->imageSize;
+    }
+
+    public function setImageSize(?int $imageSize): static
+    {
+        $this->imageSize = $imageSize;
         return $this;
     }
 
