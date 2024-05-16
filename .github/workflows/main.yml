@@ -28,7 +28,7 @@ jobs:
       run: |
         ssh -o StrictHostKeyChecking=no u92852951@home727871330.1and1-data.host << 'EOF'
           cd ~/tricount
-          composer install --no-dev --optimize-autoloader
+          php composer install --no-dev --optimize-autoloader
           php bin/console doctrine:migrations:migrate --no-interaction
           # Add other deployment commands as needed
         EOF
