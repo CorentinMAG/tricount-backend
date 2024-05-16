@@ -26,7 +26,7 @@ jobs:
 
     - name: Run deployment commands on IONOS server
       run: |
-        ssh -o StrictHostKeyChecking=no u92852951@home727871330.1and1-data.host << 'EOF'
+        ssh -tt -o StrictHostKeyChecking=no u92852951@home727871330.1and1-data.host << 'EOF'
           php composer.phar install --optimize-autoloader --working-dir=tricount
           cd tricount && php bin/console doctrine:migrations:migrate --no-interaction
           # Add other deployment commands as needed
