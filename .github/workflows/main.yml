@@ -1,0 +1,34 @@
+name: Deploy to IONOS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.IONOS_SSH_KEY }}
+
+    - name: Copy files to IONOS server
+      run: |
+        rsync -avz --exclude='.git*' --delete \
+          -e "ssh -o StrictHostKeyChecking=no" \
+          ./ u92852951@home727871330.1and1-data.host:~/tricount
+
+    - name: Run deployment commands on IONOS server
+      run: |
+        ssh -o StrictHostKeyChecking=no u92852951@home727871330.1and1-data.host << 'EOF'
+          cd ~/tricount
+          composer install --no-dev --optimize-autoloader
+          php bin/console doctrine:migrations:migrate --no-interaction
+          # Add other deployment commands as needed
+        EOF
