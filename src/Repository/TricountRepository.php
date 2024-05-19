@@ -32,6 +32,15 @@ class TricountRepository extends ServiceEntityRepository
         ->getResult();
     }
 
+    public function getByToken(string $token): Tricount | null
+    {
+        return $this->createQueryBuilder('t')
+        ->where('t.token = :token')
+        ->setParameter('token', $token)
+        ->getQuery()
+        ->getOneOrNullResult();
+    }
+
 //    /**
 //     * @return Tricount[] Returns an array of Tricount objects
 //     */

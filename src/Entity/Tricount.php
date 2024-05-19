@@ -58,16 +58,28 @@ class Tricount
     #[ORM\OneToMany(targetEntity:Transaction::class, mappedBy: 'tricount')]
     private Collection $transactions;
 
+    #[ORM\Column(nullable: true)]
+    private ?string $token = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?string $joinUri = null;
+
     public function __construct()
     {
         $this->createdAt = new \DateTime();
         $this->transactions = new ArrayCollection();
         $this->users = new ArrayCollection();
+        $this->token = random_bytes(10);
     }
 
     public function getId(): ?int
     {
         return $this->id;
+    }
+
+    public function getToken(): ?string
+    {
+        return $this->token;
     }
 
     public function getTitle(): ?string
@@ -78,6 +90,17 @@ class Tricount
     public function setTitle(string $title): static
     {
         $this->title = $title;
+        return $this;
+    }
+
+    public function getJoinUri(): ?string
+    {
+        return $this->joinUri;
+    }
+
+    public function setJoinUri(?string $joinUri): static
+    {
+        $this->joinUri = $joinUri;
         return $this;
     }
 

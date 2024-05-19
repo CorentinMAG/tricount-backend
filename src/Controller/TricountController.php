@@ -11,6 +11,7 @@ use App\Entity\Currency;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
 use App\Repository\TricountRepository;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Serializer\SerializerInterface;
 
 class TricountController extends AbstractController
@@ -44,6 +45,7 @@ class TricountController extends AbstractController
         $tricount->setCurrency($currency);
         $tricount->setLabel($label);
         $tricount->setUri("/uploads/tricounts");
+        $tricount->setJoinUri($this->generateUrl('join_tricount', ['token' => $tricount->getToken()], UrlGeneratorInterface::ABSOLUTE_URL));
         $em->persist($tricount);
         $em->flush();
 
@@ -80,6 +82,24 @@ class TricountController extends AbstractController
 
         $em->remove($tricount);
         $em->flush();
+
+        return new JsonResponse(null, Response::HTTP_NO_CONTENT);
+    }
+
+    #[Route('/api/tricounts/join/{token}', name: 'join_tricount', methods: ['POST'])]
+    public function join(string $token, TricountRepository $repo, EntityManagerInterface $em): JsonResponse
+    {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+        $user = $this->getUser();
+
+        $tricount = $repo->getByToken($token);
+        if ($tricount == null) {
+            return new JsonResponse(null, Response::HTTP_NO_CONTENT);
+        } else {
+            $tricount->addUser($user);
+            $em->persist($tricount);
+            $em->flush();
+        }
 
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }
