@@ -69,7 +69,7 @@ class Tricount
         $this->createdAt = new \DateTime();
         $this->transactions = new ArrayCollection();
         $this->users = new ArrayCollection();
-        $this->token = random_bytes(10);
+        $this->token = bin2hex(random_bytes(10));
     }
 
     public function getId(): ?int

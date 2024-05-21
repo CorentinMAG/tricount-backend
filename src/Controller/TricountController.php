@@ -19,8 +19,9 @@ class TricountController extends AbstractController
     #[Route('/api/tricounts', name: 'create_tricount', methods: ['POST'])]
     public function create(
         Request $request, 
-        EntityManagerInterface $em
-        ): Response
+        EntityManagerInterface $em,
+        SerializerInterface $serializer
+        ): JsonResponse
     {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
         $user = $this->getUser();
@@ -49,7 +50,9 @@ class TricountController extends AbstractController
         $em->persist($tricount);
         $em->flush();
 
-        return new JsonResponse(null, Response::HTTP_NO_CONTENT);
+        $jsonTricount = $serializer->serialize($tricount, 'json');
+
+        return new JsonResponse($jsonTricount, Response::HTTP_CREATED, [], true);
     }
 
     #[Route('/api/tricounts', name: 'list_tricounts', methods: ['GET'])]
