@@ -1,0 +1,30 @@
+App\Entity\Tricount:
+  attributes:
+    id:
+      groups: ["tricount:read"]
+    title:
+      groups: ["tricount:read"]
+    description:
+      groups: ["tricount:read"]
+    createdAt:
+      groups: ["tricount:read"]
+    updatedAt:
+      groups: ["tricount:read"]
+    uri:
+      groups: ["tricount:read"]
+    imageName:
+      groups: ["tricount:read"]
+    token:
+      groups: ["tricount:read"]
+    joinUri:
+      groups: ["tricount:read"]
+    isActive:
+      groups: ["tricount:read"]
+    owner:
+      groups: ["tricount:read"]
+    users:
+      groups: ["tricount:read"]
+    currency:
+      groups: ["tricount:read"]
+    label:
+      groups: ["tricount:read"]

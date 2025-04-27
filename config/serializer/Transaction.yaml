@@ -1,0 +1,24 @@
+App\Entity\Transaction:
+  attributes:
+    id:
+      groups: ["transaction:read"]
+    title:
+      groups: ["transaction:read"]
+    amount:
+      groups: ["transaction:read"]
+    description:
+      groups: ["transaction:read"]
+    createdAt:
+      groups: ["transaction:read"]
+    updatedAt:
+      groups: ["transaction:read"]
+    isActive:
+      groups: ["transaction:read"]
+    owner:
+      groups: ["transaction:read"]
+    tricount:
+      groups: ["transaction:read"]
+    label:
+      groups: ["transaction:read"]
+    type:
+      groups: ["transaction:read"]

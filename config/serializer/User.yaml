@@ -1,0 +1,16 @@
+App\Entity\User:
+  attributes:
+    id:
+      groups: ["user:read"]
+    email:
+      groups: ["user:read"]
+    username:
+      groups: ["user:read"]
+    isVerified:
+      groups: ["user:read"]
+    createdAt:
+      groups: ["user:read"]
+    gravatar:
+      groups: ["user:read"]
+    country:
+      groups: ["user:read"]

@@ -9,6 +9,7 @@ use Doctrine\DBAL\Types\Types;
 use Symfony\Component\HttpFoundation\File\File;
 use Doctrine\ORM\Mapping as ORM;
 use Vich\UploaderBundle\Mapping\Annotation as Vich;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[Vich\Uploadable]
 #[ORM\Entity(repositoryClass: TricountRepository::class)]
@@ -20,9 +21,12 @@ class Tricount
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank]
+    #[Assert\Length(min: 3, max: 255)]
     private ?string $title = null;
 
     #[ORM\Column(nullable: true, type: 'text')]
+    #[Assert\Length(max: 1000)]
     private ?string $description = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
@@ -32,15 +36,22 @@ class Tricount
     private ?\DateTimeImmutable $updatedAt = null;
 
     #[ORM\ManyToOne(inversedBy: 'tricounts', targetEntity: TricountLabel::class)]
+    #[Assert\NotNull]
     private TricountLabel $label;
 
     #[ORM\ManyToOne(inversedBy: 'tricounts', targetEntity: Currency::class)]
+    #[Assert\NotNull]
     private Currency $currency;
 
     #[ORM\Column(length: 255)]
     private ?string $uri = null;
 
     #[Vich\UploadableField(mapping: 'tricounts', fileNameProperty: 'imageName', size: 'imageSize')]
+    #[Assert\File(
+        maxSize: '2M',
+        mimeTypes: ['image/jpeg', 'image/png', 'image/gif'],
+        mimeTypesMessage: 'Please upload a valid image file (JPEG, PNG or GIF)'
+    )]
     private ?File $imageFile = null;
 
     #[ORM\Column(length: 255, nullable: true)]
@@ -50,12 +61,14 @@ class Tricount
     private ?int $imageSize = null;
 
     #[ORM\ManyToMany(targetEntity: User::class)]
+    #[ORM\JoinTable(name: 'tricount_users')]
     private Collection $users;
 
     #[ORM\ManyToOne(inversedBy: 'tricounts', targetEntity: User::class)]
+    #[Assert\NotNull]
     private User $owner;
 
-    #[ORM\OneToMany(targetEntity:Transaction::class, mappedBy: 'tricount')]
+    #[ORM\OneToMany(targetEntity:Transaction::class, mappedBy: 'tricount', cascade: ['remove'])]
     private Collection $transactions;
 
     #[ORM\Column(nullable: true)]
@@ -63,6 +76,9 @@ class Tricount
 
     #[ORM\Column(nullable: true)]
     private ?string $joinUri = null;
+
+    #[ORM\Column(type: 'boolean', options: ['default' => true])]
+    private bool $isActive = true;
 
     public function __construct()
     {
@@ -245,5 +261,26 @@ class Tricount
     {
         $this->owner = $owner;
         return $this;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->isActive;
+    }
+
+    public function setIsActive(bool $isActive): self
+    {
+        $this->isActive = $isActive;
+        return $this;
+    }
+
+    public function canUserAccess(User $user): bool
+    {
+        return $this->owner === $user || $this->users->contains($user);
+    }
+
+    public function canUserEdit(User $user): bool
+    {
+        return $this->owner === $user;
     }
 }

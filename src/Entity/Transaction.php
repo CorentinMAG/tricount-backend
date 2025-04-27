@@ -16,10 +16,14 @@ class Transaction
     private ?int $id = null;
 
     #[ORM\Column]
+    #[Assert\NotBlank]
+    #[Assert\Type(type: 'float')]
+    #[Assert\Positive]
     private ?float $amount = null;
 
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank(message: "Title cannot be blank")]
+    #[Assert\Length(min: 3, max: 255)]
     private ?string $title = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
@@ -29,23 +33,32 @@ class Transaction
     private ?\DateTimeInterface $updatedAt = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Assert\Length(max: 1000)]
     private ?string $description = null;
 
     #[ORM\ManyToOne(inversedBy: 'transactions', targetEntity: TransactionLabel::class)]
+    #[Assert\NotNull]
     private TransactionLabel $label;
 
     #[ORM\ManyToOne(inversedBy: 'transactions', targetEntity: TransactionType::class)]
+    #[Assert\NotNull]
     private TransactionType $type;
 
     #[ORM\ManyToOne(inversedBy: 'transactions', targetEntity: User::class)]
+    #[Assert\NotNull]
     private User $owner;
 
     #[ORM\ManyToOne(inversedBy: 'transactions', targetEntity: Tricount::class)]
+    #[Assert\NotNull]
     private Tricount $tricount;
+
+    #[ORM\Column(type: 'boolean', options: ['default' => true])]
+    private bool $isActive = true;
 
     public function __construct()
     {
         $this->createdAt = new \DateTime();
+        $this->updatedAt = new \DateTime();
     }
 
     public function getId(): ?int
@@ -148,5 +161,26 @@ class Transaction
     {
         $this->tricount = $tricount;
         return $this;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->isActive;
+    }
+
+    public function setIsActive(bool $isActive): self
+    {
+        $this->isActive = $isActive;
+        return $this;
+    }
+
+    public function canUserAccess(User $user): bool
+    {
+        return $this->tricount->canUserAccess($user);
+    }
+
+    public function canUserEdit(User $user): bool
+    {
+        return $this->owner === $user || $this->tricount->canUserEdit($user);
     }
 }
