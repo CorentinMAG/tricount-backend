@@ -9,6 +9,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\HttpFoundation\File\File;
 use Vich\UploaderBundle\Mapping\Annotation as Vich;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[Vich\Uploadable]
 #[ORM\Entity(repositoryClass: TricountLabelRepository::class)]
@@ -17,18 +18,22 @@ class TricountLabel
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['tricountlabel:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['tricountlabel:read'])]
     private ?string $name = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
+    #[Groups(['tricountlabel:read'])]
     private \DateTimeInterface $createdAt;
 
     #[Vich\UploadableField(mapping: 'labels_tricount', fileNameProperty: 'imageName', size: 'imageSize')]
     private ?File $imageFile = null;
 
     #[ORM\Column(nullable: true)]
+    #[Groups(['tricountlabel:read'])]
     private ?string $imageName = null;
 
     #[ORM\Column(nullable: true)]
@@ -36,9 +41,6 @@ class TricountLabel
 
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $updatedAt = null;
-
-    #[ORM\Column(length: 255)]
-    private ?string $uri = null;
 
     public function __construct()
     {
@@ -112,17 +114,6 @@ class TricountLabel
     public function setUpdatedAt(?\DateTimeImmutable $updatedAt): static
     {
         $this->updatedAt = $updatedAt;
-        return $this;
-    }
-
-    public function getUri(): ?string
-    {
-        return $this->uri;
-    }
-
-    public function setUri(?string $uri): static 
-    {
-        $this->uri = $uri;
         return $this;
     }
 }

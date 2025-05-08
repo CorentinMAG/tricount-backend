@@ -12,6 +12,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 use Vich\UploaderBundle\Mapping\Annotation as Vich;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Doctrine\Common\Collections\Collection;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[Vich\Uploadable]
 #[ORM\Entity(repositoryClass: UserRepository::class)]
@@ -22,17 +23,20 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(["user:read"])]
     private ?int $id = null;
 
     #[ORM\Column(length: 180, unique: true)]
     #[Assert\NotBlank]
     #[Assert\Length(min: 5, max: 100)]
     #[Assert\Email]
+    #[Groups(["user:read"])]
     private ?string $email = null;
 
     #[ORM\Column(length: 255, unique: true)]
     #[Assert\NotBlank]
     #[Assert\Length(min: 3, max: 40)]
+    #[Groups(["user:read"])]
     private ?string $username = null;
 
     #[ORM\Column]
@@ -48,18 +52,23 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?int $avatarSize = null;
 
     #[ORM\Column(type: 'datetime', nullable: true)]
+    #[Groups(["user:read"])]
     private ?\DateTimeInterface $updatedAt = null;
 
     #[ORM\Column(type: 'datetime', nullable: false)]
+    #[Groups(["user:read"])]
     private \DateTimeInterface $createdAt;
 
     #[ORM\Column(length: 2, nullable: false, options: ['default' => 'FR'])]
+    #[Groups(["user:read"])]
     private string $country = 'FR';
 
     #[ORM\Column(type: 'string', options: ['default' => null], nullable: true)]
+    #[Groups(["user:read"])]
     private ?string $lastLoginIp = null;
 
     #[ORM\Column(type: 'datetime', options: ['default' => null], nullable: true)]
+    #[Groups(["user:read"])]
     private ?\DateTimeInterface $lastLoginAt = null;
 
     #[ORM\ManyToMany(mappedBy: 'users', targetEntity: Tricount::class)]
@@ -68,11 +77,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: Transaction::class, mappedBy: 'owner')]
     private Collection $transactions;
 
-    #[ORM\Column(type: "string", nullable: true)]
-    private ?string $googleId;
-
     #[Assert\Url]
     #[ORM\Column(type: 'string', nullable: false)]
+    #[Groups(["user:read"])]
     private ?string $gravatar;
 
     /**
@@ -285,22 +292,65 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->gravatar;
     }
 
-    public function getGoogleId(): ?string
+    public function getOwnedTricounts(): Collection
     {
-        return $this->googleId;
+        return $this->tricounts->filter(function(Tricount $tricount) {
+            return $tricount->getOwner() === $this;
+        });
     }
 
-    public function setGoogleId(string $google_id): static
+    public function getMemberTricounts(): Collection
     {
-        $this->googleId = $google_id;
-        return $this;
+        return $this->tricounts->filter(function(Tricount $tricount) {
+            return $tricount->getOwner() !== $this;
+        });
     }
 
-    public function useOAuth2(): bool
+    public function getTotalBalance(): float
     {
-        return $this->googleId !== null;
+        $balance = 0;
+        foreach ($this->tricounts as $tricount) {
+            $balance += $this->getBalanceForTricount($tricount);
+        }
+        return $balance;
     }
 
+    public function getBalanceForTricount(Tricount $tricount): float
+    {
+        $balance = 0;
+        foreach ($this->transactions as $transaction) {
+            if ($transaction->getTricount() === $tricount) {
+                $balance += $transaction->getAmount();
+            }
+        }
+        return $balance;
+    }
+
+    public function getTotalUnpaidAmount(): float
+    {
+        $total = 0;
+        foreach ($this->transactions as $transaction) {
+            foreach ($transaction->getSplits() as $split) {
+                if ($split->getUser() === $this && !$split->isPaid()) {
+                    $total += $split->getAmount();
+                }
+            }
+        }
+        return $total;
+    }
+
+    public function getTotalPaidAmount(): float
+    {
+        $total = 0;
+        foreach ($this->transactions as $transaction) {
+            foreach ($transaction->getSplits() as $split) {
+                if ($split->getUser() === $this && $split->isPaid()) {
+                    $total += $split->getAmount();
+                }
+            }
+        }
+        return $total;
+    }
 
     /**
      * @see UserInterface

@@ -10,6 +10,8 @@ use Symfony\Component\HttpFoundation\File\File;
 use Doctrine\ORM\Mapping as ORM;
 use Vich\UploaderBundle\Mapping\Annotation as Vich;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Serializer\Annotation\SerializedName;
 
 #[Vich\Uploadable]
 #[ORM\Entity(repositoryClass: TricountRepository::class)]
@@ -18,18 +20,22 @@ class Tricount
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['tricount:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank]
     #[Assert\Length(min: 3, max: 255)]
+    #[Groups(['tricount:read'])]
     private ?string $title = null;
 
     #[ORM\Column(nullable: true, type: 'text')]
     #[Assert\Length(max: 1000)]
+    #[Groups(['tricount:read'])]
     private ?string $description = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
+    #[Groups(['tricount:read'])]
     private \DateTimeInterface $createdAt;
 
     #[ORM\Column(nullable: true)]
@@ -37,27 +43,28 @@ class Tricount
 
     #[ORM\ManyToOne(inversedBy: 'tricounts', targetEntity: TricountLabel::class)]
     #[Assert\NotNull]
+    #[Groups(['tricount:read'])]
     private TricountLabel $label;
 
     #[ORM\ManyToOne(inversedBy: 'tricounts', targetEntity: Currency::class)]
     #[Assert\NotNull]
+    #[Groups(['tricount:read'])]
     private Currency $currency;
-
-    #[ORM\Column(length: 255)]
-    private ?string $uri = null;
 
     #[Vich\UploadableField(mapping: 'tricounts', fileNameProperty: 'imageName', size: 'imageSize')]
     #[Assert\File(
         maxSize: '2M',
-        mimeTypes: ['image/jpeg', 'image/png', 'image/gif'],
-        mimeTypesMessage: 'Please upload a valid image file (JPEG, PNG or GIF)'
+        mimeTypes: ['image/jpeg', 'image/png'],
+        mimeTypesMessage: 'Please upload a valid image file (JPEG or PNG)'
     )]
     private ?File $imageFile = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['tricount:read'])]
     private ?string $imageName = null;
 
     #[ORM\Column(nullable: true)]
+    #[Groups(['tricount:read'])]
     private ?int $imageSize = null;
 
     #[ORM\ManyToMany(targetEntity: User::class)]
@@ -74,10 +81,8 @@ class Tricount
     #[ORM\Column(nullable: true)]
     private ?string $token = null;
 
-    #[ORM\Column(nullable: true)]
-    private ?string $joinUri = null;
-
     #[ORM\Column(type: 'boolean', options: ['default' => true])]
+    #[Groups(['tricount:read'])]
     private bool $isActive = true;
 
     public function __construct()
@@ -106,17 +111,6 @@ class Tricount
     public function setTitle(string $title): static
     {
         $this->title = $title;
-        return $this;
-    }
-
-    public function getJoinUri(): ?string
-    {
-        return $this->joinUri;
-    }
-
-    public function setJoinUri(?string $joinUri): static
-    {
-        $this->joinUri = $joinUri;
         return $this;
     }
 
@@ -151,18 +145,6 @@ class Tricount
     public function setUpdatedAt(?\DateTimeImmutable $updatedAt): static
     {
         $this->updatedAt = $updatedAt;
-
-        return $this;
-    }
-
-    public function getUri(): ?string
-    {
-        return $this->uri;
-    }
-
-    public function setUri(string $uri): static
-    {
-        $this->uri = $uri;
 
         return $this;
     }
@@ -282,5 +264,97 @@ class Tricount
     public function canUserEdit(User $user): bool
     {
         return $this->owner === $user;
+    }
+
+    public function getTotalBalance(): float
+    {
+        $total = 0;
+        foreach ($this->transactions as $transaction) {
+            $total += $transaction->getAmount();
+        }
+        return $total;
+    }
+
+    public function getBalanceForUser(User $user): float
+    {
+        $balance = 0;
+        foreach ($this->transactions as $transaction) {
+            if ($transaction->getOwner() === $user) {
+                $balance += $transaction->getAmount();
+            }
+            foreach ($transaction->getSplits() as $split) {
+                if ($split->getUser() === $user) {
+                    $balance -= $split->getAmount();
+                }
+            }
+        }
+        return $balance;
+    }
+
+    public function getUnpaidAmountForUser(User $user): float
+    {
+        $total = 0;
+        foreach ($this->transactions as $transaction) {
+            foreach ($transaction->getSplits() as $split) {
+                if ($split->getUser() === $user && !$split->isPaid()) {
+                    $total += $split->getAmount();
+                }
+            }
+        }
+        return $total;
+    }
+
+    public function getPaidAmountForUser(User $user): float
+    {
+        $total = 0;
+        foreach ($this->transactions as $transaction) {
+            foreach ($transaction->getSplits() as $split) {
+                if ($split->getUser() === $user && $split->isPaid()) {
+                    $total += $split->getAmount();
+                }
+            }
+        }
+        return $total;
+    }
+
+    public function getActiveTransactions(): Collection
+    {
+        return $this->transactions->filter(function(Transaction $transaction) {
+            return $transaction->isActive();
+        });
+    }
+
+    public function getInactiveTransactions(): Collection
+    {
+        return $this->transactions->filter(function(Transaction $transaction) {
+            return !$transaction->isActive();
+        });
+    }
+
+    public function getActiveUsers(): Collection
+    {
+        return $this->users->filter(function(User $user) {
+            return $user->getLastLoginAt() !== null;
+        });
+    }
+
+    public function generateNewToken(): string
+    {
+        $this->token = bin2hex(random_bytes(10));
+        return $this->token;
+    }
+
+    public function getTransactionsByDateRange(\DateTimeInterface $startDate, \DateTimeInterface $endDate): Collection
+    {
+        return $this->transactions->filter(function(Transaction $transaction) use ($startDate, $endDate) {
+            return $transaction->getCreatedAt() >= $startDate && $transaction->getCreatedAt() <= $endDate;
+        });
+    }
+
+    #[Groups(['tricount:read'])]
+    #[SerializedName('members')]
+    public function getMembersNumber(): int
+    {
+        return count($this->getUsers()) + 1;
     }
 }

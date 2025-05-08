@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\TransactionRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -55,10 +57,14 @@ class Transaction
     #[ORM\Column(type: 'boolean', options: ['default' => true])]
     private bool $isActive = true;
 
+    #[ORM\OneToMany(mappedBy: 'transaction', targetEntity: TransactionSplit::class, cascade: ['persist', 'remove'])]
+    private Collection $splits;
+
     public function __construct()
     {
         $this->createdAt = new \DateTime();
         $this->updatedAt = new \DateTime();
+        $this->splits = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -182,5 +188,54 @@ class Transaction
     public function canUserEdit(User $user): bool
     {
         return $this->owner === $user || $this->tricount->canUserEdit($user);
+    }
+
+    public function getSplits(): Collection
+    {
+        return $this->splits;
+    }
+
+    public function addSplit(TransactionSplit $split): static
+    {
+        if (!$this->splits->contains($split)) {
+            $this->splits->add($split);
+            $split->setTransaction($this);
+        }
+        return $this;
+    }
+
+    public function removeSplit(TransactionSplit $split): static
+    {
+        if ($this->splits->removeElement($split)) {
+            if ($split->getTransaction() === $this) {
+                $split->setTransaction(null);
+            }
+        }
+        return $this;
+    }
+
+    public function validateSplits(): bool
+    {
+        $totalSplits = 0;
+        foreach ($this->splits as $split) {
+            $totalSplits += $split->getAmount();
+        }
+        return abs($totalSplits - $this->amount) < 0.01; // Using small epsilon for float comparison
+    }
+
+    public function getTotalPaid(): float
+    {
+        $total = 0;
+        foreach ($this->splits as $split) {
+            if ($split->isPaid()) {
+                $total += $split->getAmount();
+            }
+        }
+        return $total;
+    }
+
+    public function getRemainingAmount(): float
+    {
+        return $this->amount - $this->getTotalPaid();
     }
 }

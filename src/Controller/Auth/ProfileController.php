@@ -15,7 +15,7 @@ class ProfileController extends AbstractController
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
         $user = $this->getUser();
         
-        $jsonUser = $serializer->serialize($user, 'json');
+        $jsonUser = $serializer->serialize($user, 'json', ["groups" => ["user:read"]]);
         return new JsonResponse($jsonUser, Response::HTTP_OK, [], true);
     }
 }

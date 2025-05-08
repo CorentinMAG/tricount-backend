@@ -10,7 +10,7 @@ use Doctrine\Migrations\AbstractMigration;
 /**
  * Auto-generated Migration: Please modify to your needs!
  */
-final class Version20240507185244 extends AbstractMigration
+final class Version20250508160731 extends AbstractMigration
 {
     public function getDescription(): string
     {
@@ -20,14 +20,14 @@ final class Version20240507185244 extends AbstractMigration
     public function up(Schema $schema): void
     {
         // this up() migration is auto-generated, please modify it to your needs
-        $this->addSql('ALTER TABLE currency CHANGE uri uri VARCHAR(255) NOT NULL');
-        $this->addSql('ALTER TABLE tricount_label CHANGE updated_at updated_at DATETIME DEFAULT NULL COMMENT \'(DC2Type:datetime_immutable)\'');
+        $this->addSql('ALTER TABLE currency DROP uri');
+        $this->addSql('ALTER TABLE tricount_label DROP uri');
     }
 
     public function down(Schema $schema): void
     {
         // this down() migration is auto-generated, please modify it to your needs
-        $this->addSql('ALTER TABLE tricount_label CHANGE updated_at updated_at DATETIME NOT NULL COMMENT \'(DC2Type:datetime_immutable)\'');
-        $this->addSql('ALTER TABLE currency CHANGE uri uri VARCHAR(255) DEFAULT NULL');
+        $this->addSql('ALTER TABLE tricount_label ADD uri VARCHAR(255) NOT NULL');
+        $this->addSql('ALTER TABLE currency ADD uri VARCHAR(255) NOT NULL');
     }
 }

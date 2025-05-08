@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Tricount;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -39,6 +40,93 @@ class TricountRepository extends ServiceEntityRepository
         ->setParameter('token', $token)
         ->getQuery()
         ->getOneOrNullResult();
+    }
+
+    public function findActiveTricounts()
+    {
+        return $this->createQueryBuilder('t')
+            ->andWhere('t.isActive = :isActive')
+            ->setParameter('isActive', true)
+            ->orderBy('t.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function findTricountsByUser(User $user)
+    {
+        return $this->createQueryBuilder('t')
+            ->join('t.users', 'u')
+            ->andWhere('u = :user')
+            ->setParameter('user', $user)
+            ->orderBy('t.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function findTricountsByOwner(User $user)
+    {
+        return $this->createQueryBuilder('t')
+            ->andWhere('t.owner = :owner')
+            ->setParameter('owner', $user)
+            ->orderBy('t.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function findTricountsByToken(string $token)
+    {
+        return $this->createQueryBuilder('t')
+            ->andWhere('t.token = :token')
+            ->andWhere('t.isActive = :isActive')
+            ->setParameter('token', $token)
+            ->setParameter('isActive', true)
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function findTricountsByDateRange(\DateTimeInterface $startDate, \DateTimeInterface $endDate)
+    {
+        return $this->createQueryBuilder('t')
+            ->andWhere('t.createdAt BETWEEN :startDate AND :endDate')
+            ->setParameter('startDate', $startDate)
+            ->setParameter('endDate', $endDate)
+            ->orderBy('t.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function findTricountsWithUnpaidTransactions()
+    {
+        return $this->createQueryBuilder('t')
+            ->join('t.transactions', 'tr')
+            ->join('tr.splits', 's')
+            ->andWhere('s.isPaid = :isPaid')
+            ->setParameter('isPaid', false)
+            ->groupBy('t.id')
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function findTricountsByCurrency(string $currencyCode)
+    {
+        return $this->createQueryBuilder('t')
+            ->join('t.currency', 'c')
+            ->andWhere('c.code = :currencyCode')
+            ->setParameter('currencyCode', $currencyCode)
+            ->orderBy('t.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function findTricountsByLabel(string $labelName)
+    {
+        return $this->createQueryBuilder('t')
+            ->join('t.label', 'l')
+            ->andWhere('l.name = :labelName')
+            ->setParameter('labelName', $labelName)
+            ->orderBy('t.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
     }
 
 //    /**
