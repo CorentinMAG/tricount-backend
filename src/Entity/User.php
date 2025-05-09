@@ -71,11 +71,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(["user:read"])]
     private ?\DateTimeInterface $lastLoginAt = null;
 
-    #[ORM\ManyToMany(mappedBy: 'users', targetEntity: Tricount::class)]
-    private Collection $tricounts;
-
-    #[ORM\OneToMany(targetEntity: Transaction::class, mappedBy: 'owner')]
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: Transaction::class)]
     private Collection $transactions;
+
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: TricountUser::class)]
+    private Collection $tricountUsers;
 
     #[Assert\Url]
     #[ORM\Column(type: 'string', nullable: false)]
@@ -91,8 +91,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function __construct()
     {
         $this->createdAt = new \DateTime();
-        $this->tricounts = new ArrayCollection();
         $this->transactions = new ArrayCollection();
+        $this->tricountUsers = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -261,49 +261,59 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
+    public function getTricountUsers(): Collection
+    {
+        return $this->tricountUsers;
+    }
+
+    public function addTricountUser(TricountUser $tricountUser): static
+    {
+        if (!$this->tricountUsers->contains($tricountUser)) {
+            $this->tricountUsers->add($tricountUser);
+            $tricountUser->setUser($this);
+        }
+        return $this;
+    }
+
+    public function removeTricountUser(TricountUser $tricountUser): static
+    {
+        if ($this->tricountUsers->removeElement($tricountUser)) {
+            if ($tricountUser->getUser() === $this) {
+                $tricountUser->setUser(null);
+            }
+        }
+        return $this;
+    }
+
     public function getTricounts(): Collection
     {
-        return $this->tricounts;
-    }
-
-    public function addTricount(Tricount $tricount): static
-    {
-        if (!$this->tricounts->contains($tricount)) {
-            $this->tricounts->add($tricount);
+        $tricounts = new ArrayCollection();
+        foreach ($this->tricountUsers as $tricountUser) {
+            $tricounts->add($tricountUser->getTricount());
         }
-        return $this;
-    }
-
-    public function getTransactions(): Collection
-    {
-        return $this->transactions;
-    }
-
-    public function addTransaction(Transaction $transaction): static
-    {
-        if (!$this->transactions->contains($transaction)) {
-            $this->transactions->add($transaction);
-        }
-        return $this;
-    }
-
-    public function getGravatar(): ?string
-    {
-        return $this->gravatar;
+        return $tricounts;
     }
 
     public function getOwnedTricounts(): Collection
     {
-        return $this->tricounts->filter(function(Tricount $tricount) {
-            return $tricount->getOwner() === $this;
-        });
+        $tricounts = new ArrayCollection();
+        foreach ($this->tricountUsers as $tricountUser) {
+            if ($tricountUser->isOwner()) {
+                $tricounts->add($tricountUser->getTricount());
+            }
+        }
+        return $tricounts;
     }
 
     public function getMemberTricounts(): Collection
     {
-        return $this->tricounts->filter(function(Tricount $tricount) {
-            return $tricount->getOwner() !== $this;
-        });
+        $tricounts = new ArrayCollection();
+        foreach ($this->tricountUsers as $tricountUser) {
+            if (!$tricountUser->isOwner()) {
+                $tricounts->add($tricountUser->getTricount());
+            }
+        }
+        return $tricounts;
     }
 
     public function getTotalBalance(): float

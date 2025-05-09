@@ -67,16 +67,11 @@ class Tricount
     #[Groups(['tricount:read'])]
     private ?int $imageSize = null;
 
-    #[ORM\ManyToMany(targetEntity: User::class)]
-    #[ORM\JoinTable(name: 'tricount_users')]
-    private Collection $users;
-
-    #[ORM\ManyToOne(inversedBy: 'tricounts', targetEntity: User::class)]
-    #[Assert\NotNull]
-    private User $owner;
-
     #[ORM\OneToMany(targetEntity:Transaction::class, mappedBy: 'tricount', cascade: ['remove'])]
     private Collection $transactions;
+
+    #[ORM\OneToMany(targetEntity: TricountUser::class, mappedBy: 'tricount', cascade: ['persist', 'remove'])]
+    private Collection $tricountUsers;
 
     #[ORM\Column(nullable: true)]
     private ?string $token = null;
@@ -89,7 +84,7 @@ class Tricount
     {
         $this->createdAt = new \DateTime();
         $this->transactions = new ArrayCollection();
-        $this->users = new ArrayCollection();
+        $this->tricountUsers = new ArrayCollection();
         $this->token = bin2hex(random_bytes(10));
     }
 
@@ -222,27 +217,75 @@ class Tricount
         return $this;
     }
 
-    public function getUsers(): Collection
+    public function getTricountUsers(): Collection
     {
-        return $this->users;
+        return $this->tricountUsers;
     }
 
-    public function addUser(User $user): static
+    public function addTricountUser(TricountUser $tricountUser): static
     {
-        if (!$this->users->contains($user)) {
-            $this->users->add($user);
+        if (!$this->tricountUsers->contains($tricountUser)) {
+            $this->tricountUsers->add($tricountUser);
+            $tricountUser->setTricount($this);
         }
         return $this;
     }
 
-    public function getOwner(): User {
-        return $this->owner;
+    public function removeTricountUser(TricountUser $tricountUser): static
+    {
+        if ($this->tricountUsers->removeElement($tricountUser)) {
+            if ($tricountUser->getTricount() === $this) {
+                $tricountUser->setTricount(null);
+            }
+        }
+        return $this;
     }
 
-    public function setOwner(User $owner): static
+    public function canUserAccess(User $user): bool
     {
-        $this->owner = $owner;
-        return $this;
+        foreach ($this->tricountUsers as $tricountUser) {
+            if ($tricountUser->getUser() === $user) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public function canUserEdit(User $user): bool
+    {
+        foreach ($this->tricountUsers as $tricountUser) {
+            if ($tricountUser->getUser() === $user) {
+                return $tricountUser->canEdit();
+            }
+        }
+        return false;
+    }
+
+    public function isUserOwner(User $user): bool
+    {
+        foreach ($this->tricountUsers as $tricountUser) {
+            if ($tricountUser->getUser() === $user) {
+                return $tricountUser->isOwner();
+            }
+        }
+        return false;
+    }
+
+    public function getUsers(): Collection
+    {
+        $users = new ArrayCollection();
+        foreach ($this->tricountUsers as $tricountUser) {
+            $users->add($tricountUser->getUser());
+        }
+        return $users;
+    }
+
+    public function addUser(User $user, string $role = TricountUser::ROLE_VIEWER): static
+    {
+        $tricountUser = new TricountUser();
+        $tricountUser->setUser($user);
+        $tricountUser->setRole($role);
+        return $this->addTricountUser($tricountUser);
     }
 
     public function isActive(): bool
@@ -254,16 +297,6 @@ class Tricount
     {
         $this->isActive = $isActive;
         return $this;
-    }
-
-    public function canUserAccess(User $user): bool
-    {
-        return $this->owner === $user || $this->users->contains($user);
-    }
-
-    public function canUserEdit(User $user): bool
-    {
-        return $this->owner === $user;
     }
 
     public function getTotalBalance(): float

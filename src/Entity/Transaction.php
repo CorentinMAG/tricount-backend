@@ -7,7 +7,9 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use App\Entity\TricountLabel;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: TransactionRepository::class)]
 class Transaction
@@ -15,39 +17,47 @@ class Transaction
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['transaction:read'])]
     private ?int $id = null;
 
     #[ORM\Column]
     #[Assert\NotBlank]
     #[Assert\Type(type: 'float')]
     #[Assert\Positive]
+    #[Groups(['transaction:read'])]
     private ?float $amount = null;
 
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank(message: "Title cannot be blank")]
     #[Assert\Length(min: 3, max: 255)]
+    #[Groups(['transaction:read'])]
     private ?string $title = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
+    #[Groups(['transaction:read'])]
     private \DateTimeInterface $createdAt;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
+    #[Groups(['transaction:read'])]
     private ?\DateTimeInterface $updatedAt = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     #[Assert\Length(max: 1000)]
+    #[Groups(['transaction:read'])]
     private ?string $description = null;
 
-    #[ORM\ManyToOne(inversedBy: 'transactions', targetEntity: TransactionLabel::class)]
+    #[ORM\ManyToOne(inversedBy: 'transactions', targetEntity: TricountLabel::class)]
     #[Assert\NotNull]
-    private TransactionLabel $label;
+    #[Groups(['transaction:read'])]
+    private TricountLabel $label;
 
-    #[ORM\ManyToOne(inversedBy: 'transactions', targetEntity: TransactionType::class)]
-    #[Assert\NotNull]
-    private TransactionType $type;
+    // #[ORM\ManyToOne(inversedBy: 'transactions', targetEntity: TransactionType::class)]
+    // #[Assert\NotNull]
+    // private TransactionType $type;
 
     #[ORM\ManyToOne(inversedBy: 'transactions', targetEntity: User::class)]
     #[Assert\NotNull]
+    #[Groups(['transaction:read'])]
     private User $owner;
 
     #[ORM\ManyToOne(inversedBy: 'transactions', targetEntity: Tricount::class)]
@@ -55,9 +65,11 @@ class Transaction
     private Tricount $tricount;
 
     #[ORM\Column(type: 'boolean', options: ['default' => true])]
+    #[Groups(['transaction:read'])]
     private bool $isActive = true;
 
     #[ORM\OneToMany(mappedBy: 'transaction', targetEntity: TransactionSplit::class, cascade: ['persist', 'remove'])]
+    #[Groups(['transaction:read'])]
     private Collection $splits;
 
     public function __construct()
@@ -125,27 +137,27 @@ class Transaction
         return $this;
     }
 
-    public function getLabel(): TransactionLabel 
+    public function getLabel(): TricountLabel 
     {
         return $this->label;
     }
 
-    public function setLabel(TransactionLabel $label): static
+    public function setLabel(TricountLabel $label): static
     {
         $this->label = $label;
         return $this;
     }
 
-    public function getType(): TransactionType
-    {
-        return $this->type;
-    }
+    // public function getType(): TransactionType
+    // {
+    //     return $this->type;
+    // }
 
-    public function setType(TransactionType $type): static
-    {
-        $this->type = $type;
-        return $this;
-    }
+    // public function setType(TransactionType $type): static
+    // {
+    //     $this->type = $type;
+    //     return $this;
+    // }
 
     public function getOwner(): User
     {

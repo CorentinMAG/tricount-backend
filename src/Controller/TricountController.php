@@ -38,7 +38,8 @@ class TricountController extends AbstractController
         if (isset($file)) {
             $tricount->setImageFile($file);
         } else {
-            $tricount->setImageFile(new UploadedFile($this->getParameter('kernel.project_dir') . '/default/money-bag.png', 'money-bag.png', null, null, true));
+            copy($this->getParameter('kernel.project_dir') . '/fixtures/money-bag.png', $this->getParameter('tmp_dir'). '/money-bag.png');
+            $tricount->setImageFile(new UploadedFile($this->getParameter('tmp_dir') . '/money-bag.png', 'money-bag.png', null, null, true));
         }
 
         $jsondata = $request->request->get('data');
@@ -133,6 +134,10 @@ class TricountController extends AbstractController
             if ($label) {
                 $tricount->setLabel($label);
             }
+        }
+
+        if (isset($data['isActive'])) {
+            $tricount->setIsActive($data['isActive']);
         }
 
         $errors = $validator->validate($tricount);
@@ -236,13 +241,11 @@ class TricountController extends AbstractController
         }
 
         $newToken = $tricount->generateNewToken();
-        $tricount->setJoinUri($this->generateUrl('join_tricount', ['token' => $newToken], UrlGeneratorInterface::ABSOLUTE_URL));
         
         $em->flush();
 
         return new JsonResponse([
             'token' => $newToken,
-            'join_uri' => $tricount->getJoinUri()
         ], Response::HTTP_OK);
     }
 }

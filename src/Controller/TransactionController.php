@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Transaction;
 use App\Entity\Tricount;
+use App\Entity\TricountLabel;
 use App\Repository\TransactionRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -42,15 +43,21 @@ class TransactionController extends AbstractController
             return new JsonResponse(['message' => 'Access denied'], Response::HTTP_FORBIDDEN);
         }
 
-        $data = json_decode($request->getContent(), true);
+        $jsondata = $request->request->get('data');
+        $data = json_decode($jsondata, true);
         
         $transaction = new Transaction();
         $transaction->setTitle($data['title'] ?? '');
         $transaction->setDescription($data['description'] ?? null);
         $transaction->setAmount($data['amount'] ?? 0);
-        $transaction->setType($data['type'] ?? 'expense');
+        #$transaction->setType($data['type'] ?? 'expense');
         $transaction->setOwner($user);
         $transaction->setTricount($tricount);
+        
+        $label = $em->getRepository(TricountLabel::class)->find($data['label']);
+        if ($label) {
+            $transaction->setLabel($label);
+        }
 
         // Validate transaction
         $errors = $validator->validate($transaction);
@@ -86,7 +93,7 @@ class TransactionController extends AbstractController
         $em->persist($transaction);
         $em->flush();
 
-        $jsonTransaction = $serializer->serialize($transaction, 'json', ['groups' => ['transaction:read']]);
+        $jsonTransaction = $serializer->serialize($transaction, 'json', ['groups' => ['transaction:read', 'tricountlabel:read', 'user:read', 'split:read']]);
         return new JsonResponse($jsonTransaction, Response::HTTP_CREATED, [], true);
     }
 
@@ -105,15 +112,14 @@ class TransactionController extends AbstractController
         }
 
         $filters = [
-            'type' => $request->query->get('type'),
-            'user' => $request->query->get('user'),
+            'user' => $user,
             'dateFrom' => $request->query->get('dateFrom'),
             'dateTo' => $request->query->get('dateTo'),
             'isActive' => $request->query->get('isActive', true)
         ];
 
         $transactions = $repo->findByTricount($tricount, $filters);
-        $jsonTransactions = $serializer->serialize($transactions, 'json', ['groups' => ['transaction:read']]);
+        $jsonTransactions = $serializer->serialize($transactions, 'json', ['groups' => ['transaction:read', 'user:read', 'split:read']]);
         return new JsonResponse($jsonTransactions, Response::HTTP_OK, [], true);
     }
 

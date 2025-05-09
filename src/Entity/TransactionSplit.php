@@ -5,6 +5,7 @@ namespace App\Entity;
 use App\Repository\TransactionSplitRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: TransactionSplitRepository::class)]
 class TransactionSplit
@@ -12,6 +13,7 @@ class TransactionSplit
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['split:read'])]
     private ?int $id = null;
 
     #[ORM\ManyToOne(inversedBy: 'splits', targetEntity: Transaction::class)]
@@ -22,15 +24,18 @@ class TransactionSplit
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(nullable: false)]
     #[Assert\NotNull]
+    #[Groups(['split:read'])]
     private User $user;
 
     #[ORM\Column]
     #[Assert\NotBlank]
     #[Assert\Type(type: 'float')]
     #[Assert\PositiveOrZero]
+    #[Groups(['split:read'])]
     private ?float $amount = null;
 
     #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    #[Groups(['split:read'])]
     private bool $isPaid = false;
 
     public function getId(): ?int

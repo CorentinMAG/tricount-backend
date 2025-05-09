@@ -45,4 +45,40 @@ class TransactionRepository extends ServiceEntityRepository
 //            ->getOneOrNullResult()
 //        ;
 //    }
+
+    /**
+     * @return Transaction[] Returns an array of Transaction objects
+     */
+    public function findByTricount($tricount, array $filters = []): array
+    {
+        $qb = $this->createQueryBuilder('t')
+            ->leftJoin('t.splits', 's')
+            ->andWhere('t.tricount = :tricount')
+            ->setParameter('tricount', $tricount);
+
+        if (isset($filters['user'])) {
+            $qb->andWhere('t.owner = :user OR s.user = :user')
+               ->setParameter('user', $filters['user']);
+        }
+
+        if (isset($filters['dateFrom'])) {
+            $qb->andWhere('t.createdAt >= :dateFrom')
+               ->setParameter('dateFrom', new \DateTime($filters['dateFrom']));
+        }
+
+        if (isset($filters['dateTo'])) {
+            $qb->andWhere('t.createdAt <= :dateTo')
+               ->setParameter('dateTo', new \DateTime($filters['dateTo']));
+        }
+
+        if (isset($filters['isActive'])) {
+            $qb->andWhere('t.isActive = :isActive')
+               ->setParameter('isActive', $filters['isActive']);
+        }
+
+        return $qb->orderBy('t.createdAt', 'DESC')
+                 ->distinct()
+                 ->getQuery()
+                 ->getResult();
+    }
 }
